@@ -13,6 +13,29 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Auto-Fix Folder Structure & Generate gradle.properties
+        run: |
+          echo "android.useAndroidX=true" > gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+          echo "org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" >> gradle.properties
+          echo "kotlin.code.style=official" >> gradle.properties
+
+          mkdir -p app/src/main/java/com/wfm/game/data
+          mkdir -p app/src/main/java/com/wfm/game/engine
+          mkdir -p app/src/main/java/com/wfm/game/ui
+
+          # If any file was accidentally created in the wrong folder on mobile, move it to the right place:
+          find . -maxdepth 3 -name "AndroidManifest.xml" -not -path "./app/src/main/AndroidManifest.xml" -exec cp {} app/src/main/AndroidManifest.xml \;
+          find . -maxdepth 4 -name "WorldDatabaseAndModels.kt" -not -path "./app/src/main/java/com/wfm/game/data/WorldDatabaseAndModels.kt" -exec cp {} app/src/main/java/com/wfm/game/data/WorldDatabaseAndModels.kt \;
+          find . -maxdepth 4 -name "FootballSimulationEngines.kt" -not -path "./app/src/main/java/com/wfm/game/engine/FootballSimulationEngines.kt" -exec cp {} app/src/main/java/com/wfm/game/engine/FootballSimulationEngines.kt \;
+          find . -maxdepth 4 -name "MainActivityAndScreens.kt" -not -path "./app/src/main/java/com/wfm/game/ui/MainActivityAndScreens.kt" -exec cp {} app/src/main/java/com/wfm/game/ui/MainActivityAndScreens.kt \;
+
+          echo "=== Checking Required Project Files ==="
+          ls -la settings.gradle.kts build.gradle.kts app/build.gradle.kts app/src/main/AndroidManifest.xml
+          ls -la app/src/main/java/com/wfm/game/data/WorldDatabaseAndModels.kt
+          ls -la app/src/main/java/com/wfm/game/engine/FootballSimulationEngines.kt
+          ls -la app/src/main/java/com/wfm/game/ui/MainActivityAndScreens.kt
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -28,7 +51,7 @@ jobs:
           gradle-version: '8.7'
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug -Pandroid.useAndroidX=true --no-daemon --stacktrace
 
       - name: Upload Compiled APK Artifact
         uses: actions/upload-artifact@v4
